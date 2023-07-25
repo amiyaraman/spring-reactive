@@ -35,8 +35,6 @@ public class BeerServiceImpl implements BeerService {
 
     @Override
     public Mono<BeerDTO> saveNewBeer(BeerDTO beerDTO) {
-        System.out.println(beerDTO);
-        System.out.println(beerMapper.beerDTOToBeer(beerDTO));
         return beerRepository
                 .save(beerMapper.beerDTOToBeer(beerDTO))
                 .map(beerMapper::beerToBeerDTO);
@@ -83,5 +81,10 @@ public class BeerServiceImpl implements BeerService {
                     return foundBeer;
                 }).flatMap(beerRepository::save)
                 .map(beerMapper::beerToBeerDTO);
+    }
+
+    @Override
+    public Mono<Void> deleteBeerById(Integer beerId) {
+        return beerRepository.deleteById(beerId);
     }
 }

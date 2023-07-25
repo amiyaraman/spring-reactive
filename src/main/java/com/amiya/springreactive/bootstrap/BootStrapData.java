@@ -1,7 +1,9 @@
 package com.amiya.springreactive.bootstrap;
 
 import com.amiya.springreactive.domain.Beer;
+import com.amiya.springreactive.domain.Customer;
 import com.amiya.springreactive.repositories.BeerRepository;
+import com.amiya.springreactive.repositories.CustomerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -15,14 +17,41 @@ public class BootStrapData implements CommandLineRunner {
 
     private final BeerRepository beerRepository;
 
+    private final CustomerRepository customerRepository;
+
     @Override
     public void run(String... args) throws Exception {
         loadBeerData();
+        loadCustomerData();
 
         beerRepository.count().subscribe(count -> System.out.println("Count is :"+count)
         );
+
+        customerRepository.count().subscribe(count -> {
+            System.out.println("Customer Count is: " + count);
+        });
     }
 
+    private void loadCustomerData() {
+        customerRepository.count().subscribe(count -> {
+            if(count == 0){
+                customerRepository.save(Customer.builder()
+                                .customerName("Customer 1")
+                                .build())
+                        .subscribe();
+
+                customerRepository.save(Customer.builder()
+                                .customerName("Customer 2")
+                                .build())
+                        .subscribe();
+
+                customerRepository.save(Customer.builder()
+                                .customerName("Customer 3")
+                                .build())
+                        .subscribe();
+            }
+        });
+    }
         private void loadBeerData() {
             beerRepository.count().subscribe(count -> {
                 if (count == 0) {
