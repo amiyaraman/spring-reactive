@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -34,7 +35,8 @@ public class BeerController {
 
     @GetMapping(GET_BEER_PATH_ID)
     public Mono<BeerDTO> getBeerById(@PathVariable("beerId") Integer beerId) {
-        return beerService.getBeerById(beerId);
+        return beerService.getBeerById(beerId)
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND)));
     }
 
     @PostMapping(GET_BEER_PATH)
@@ -50,21 +52,26 @@ public class BeerController {
 
     @PutMapping(GET_BEER_PATH_ID)
     Mono<ResponseEntity<Void>>  updateExistingBeer(@PathVariable("beerId") Integer beerId, @Validated @RequestBody BeerDTO beerDTO){
-        return beerService.updateExistingBeer(beerId,beerDTO).map(savedBeerDTO -> ResponseEntity
-                .ok().build());
+        return beerService.updateExistingBeer(beerId,beerDTO)
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND)))
+                .map(savedBeerDTO -> ResponseEntity
+                .noContent().build());
     }
 
     @PatchMapping(GET_BEER_PATH_ID)
     Mono<ResponseEntity<Void>> patchExistingBeer(@PathVariable Integer beerId,
                                                  @Validated @RequestBody BeerDTO beerDTO){
         return beerService.patchBeer(beerId, beerDTO)
-                .map(updatedDto -> ResponseEntity.ok().build());
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND)))
+                .map(updatedDto -> ResponseEntity.noContent().build());
     }
 
     @DeleteMapping(GET_BEER_PATH_ID)
     Mono<ResponseEntity<Void>> deleteBeerById(@PathVariable("beerId") Integer beerId){
-        return beerService.deleteBeerById(beerId)
-                .map(unused->ResponseEntity.noContent().build());
+        return beerService.getBeerById(beerId)
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND)))
+                .map(beerDTO -> beerService.deleteBeerById(beerDTO.getId()))
+                .thenReturn(ResponseEntity.noContent().build());
     }
 }
 

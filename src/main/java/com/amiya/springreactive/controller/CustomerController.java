@@ -5,9 +5,11 @@ import com.amiya.springreactive.model.BeerDTO;
 import com.amiya.springreactive.model.CustomerDTO;
 import com.amiya.springreactive.service.CustomerService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -30,7 +32,8 @@ public class CustomerController {
     }
     @GetMapping(GET_CUSTOMER_PATH_ID)
     public Mono<CustomerDTO> getCustomerById(@PathVariable("customerId") Integer customerId) {
-        return customerService.getCustomerById(customerId);
+        return customerService.getCustomerById(customerId)
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND)));
     }
 
     @PostMapping(GET_CUSTOMER_PATH)
@@ -46,21 +49,27 @@ public class CustomerController {
 
     @PutMapping(GET_CUSTOMER_PATH_ID)
     Mono<ResponseEntity<Void>>  updateExistingCustomer(@PathVariable("customerId") Integer customerId, @Validated @RequestBody CustomerDTO customerDTO){
-        return customerService.updateExistingCustomer(customerId,customerDTO).map(savedCustomerDTO -> ResponseEntity
-                .ok().build());
+        return customerService.updateExistingCustomer(customerId,customerDTO)
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND)))
+                .map(savedCustomerDTO -> ResponseEntity
+                .noContent().build());
     }
 
     @PatchMapping(GET_CUSTOMER_PATH_ID)
     Mono<ResponseEntity<Void>> patchExistingCustomer(@PathVariable("customerId") Integer customerId,
                                                  @Validated @RequestBody CustomerDTO customerDTO){
         return customerService.patchCustomer(customerId, customerDTO)
-                .map(updatedDto -> ResponseEntity.ok().build());
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND)))
+                .map(updatedDto -> ResponseEntity.noContent().build());
     }
 
 
     @DeleteMapping(GET_CUSTOMER_PATH_ID)
     Mono<ResponseEntity<Void>> deleteById(@PathVariable("customerId") Integer customerId){
-        return customerService.deleteCustomerById(customerId).map(response -> ResponseEntity
+        return customerService.getCustomerById(customerId)
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND)))
+                .map(customerDTO -> customerService.deleteCustomerById(customerDTO.getId()))
+               .thenReturn(ResponseEntity
                 .noContent().build());
     }
 }
